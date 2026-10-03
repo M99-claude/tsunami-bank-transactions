@@ -349,3 +349,25 @@ def test_cli_writes_each_account_to_its_worksheet(tmp_path, monkeypatch):
     key = COLUMNS.index("ID transakcie")
     assert [r[key] for r in sheets["Transakcie"].rows] == ["A:1", "B:1"]
     assert [r[key] for r in sheets["Iný"].rows] == ["C:1"]
+
+
+def test_cli_default_window_is_yesterday_and_today(tmp_path, monkeypatch):
+    import bank_sync.cli as cli
+    import bank_sync.providers as providers_mod
+    from bank_sync.sheets import TransactionSheet
+
+    path = tmp_path / "c.yaml"
+    path.write_text("google_sheet: {spreadsheet_id: abc}\naccounts:\n  - {name: A, provider: fio}\n")
+    seen = []
+
+    class Recorder(FakeProvider):
+        def fetch(self, date_from, date_to):
+            seen.append((date_from, date_to))
+            return []
+
+    monkeypatch.setattr(cli, "_today", lambda tz: date(2026, 10, 3))
+    monkeypatch.setattr(providers_mod, "build_provider", lambda a, cfg: Recorder())
+    monkeypatch.setattr(TransactionSheet, "open_all", classmethod(lambda cls, cfg, names: {n: FakeSheet() for n in names}))
+
+    assert main(["-c", str(path), "sync"]) == 0
+    assert seen == [(date(2026, 10, 2), date(2026, 10, 3))]

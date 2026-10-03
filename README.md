@@ -1,6 +1,6 @@
 # bank_sync – bankové transakcie do Google Sheetu
 
-Každý deň stiahne cez bankové API transakcie za **predchádzajúci deň** zo všetkých nastavených účtov
+Každý deň stiahne cez bankové API transakcie za **predchádzajúci aj aktuálny deň** zo všetkých nastavených účtov
 a doplní ich do tabuľky v Google Sheets. Transakcie, ktoré už v tabuľke sú (podľa stĺpca
 „ID transakcie“), sa znova nezapíšu, takže opakované spustenie ani spätné dotiahnutie viacerých dní
 nevytvorí duplicity.
@@ -67,8 +67,8 @@ export GOOGLE_APPLICATION_CREDENTIALS=service-account.json
 export FIO_TOKEN_1=...
 
 python -m bank_sync sync --dry-run     # len vypíše, čo by zapísal
-python -m bank_sync sync               # včerajšok
-python -m bank_sync sync --days 7      # posledných 7 dní (už zapísané sa preskočia)
+python -m bank_sync sync               # včerajšok a dnešok
+python -m bank_sync sync --days 7      # posledných 7 dní vrátane dneška (už zapísané sa preskočia)
 python -m bank_sync sync --from 2026-01-01 --date 2026-06-30   # spätné načítanie
 python -m bank_sync sync --account "Fio firemný"               # len jeden účet
 ```

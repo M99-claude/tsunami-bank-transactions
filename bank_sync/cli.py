@@ -12,8 +12,8 @@ from .config import load_config
 log = logging.getLogger("bank_sync")
 
 
-def _yesterday(tz: str) -> date:
-    return datetime.now(ZoneInfo(tz)).date() - timedelta(days=1)
+def _today(tz: str) -> date:
+    return datetime.now(ZoneInfo(tz)).date()
 
 
 def cmd_sync(args) -> int:
@@ -22,7 +22,7 @@ def cmd_sync(args) -> int:
     from .sync import sync
 
     config = load_config(args.config)
-    date_to = date.fromisoformat(args.date) if args.date else _yesterday(config.timezone)
+    date_to = date.fromisoformat(args.date) if args.date else _today(config.timezone)
     date_from = date.fromisoformat(args.date_from) if args.date_from else date_to - timedelta(days=args.days - 1)
     if date_from > date_to:
         log.error("Dátum od (%s) je po dátume do (%s)", date_from, date_to)
@@ -89,10 +89,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("-v", "--verbose", action="store_true")
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p = sub.add_parser("sync", help="stiahnuť transakcie a doplniť ich do hárku (predvolene za včerajšok)")
-    p.add_argument("--date", help="posledný deň obdobia YYYY-MM-DD (predvolene včera)")
+    p = sub.add_parser("sync", help="stiahnuť transakcie a doplniť ich do hárku (predvolene za včerajšok a dnešok)")
+    p.add_argument("--date", help="posledný deň obdobia YYYY-MM-DD (predvolene dnes)")
     p.add_argument("--from", dest="date_from", help="prvý deň obdobia YYYY-MM-DD")
-    p.add_argument("--days", type=int, default=1, help="počet dní dozadu vrátane --date (predvolene 1)")
+    p.add_argument("--days", type=int, default=2, help="počet dní vrátane --date (predvolene 2 = včera a dnes)")
     p.add_argument("--account", action="append", help="len vybraný účet (dá sa opakovať)")
     p.add_argument("--dry-run", action="store_true", help="nič nezapisovať, len vypísať")
     p.set_defaults(func=cmd_sync)
