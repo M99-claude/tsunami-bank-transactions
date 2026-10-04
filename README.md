@@ -78,11 +78,38 @@ Každý účet môže mať vlastný hárok (`worksheet:` pri účte); bez neho s
 
 Ak niektorý účet zlyhá, ostatné sa aj tak zapíšu a príkaz skončí s návratovým kódom 1.
 
-## 4. Denné spúšťanie cez GitHub Actions
+## 4. Denné spúšťanie: cron-job.org → GitHub Actions
 
-Workflow `.github/workflows/daily-sync.yml` beží každý deň o 6:00 slovenského času (v lete aj v zime) a dá sa
-spustiť aj ručne (Actions → *Run workflow*, s voliteľným počtom dní).
+Synchronizáciu vykonáva workflow `.github/workflows/daily-sync.yml`. Sám sa nespúšťa – každé ráno
+o 6:00 ho cez GitHub API spustí služba [cron-job.org](https://cron-job.org) (tá pozná časové pásmo
+Europe/Bratislava a spúšťa presne načas). Ručne sa dá spustiť aj cez Actions → *Run workflow*
+(s voliteľným počtom dní).
 
+### GitHub token pre cron-job.org
+GitHub → *Settings → Developer settings → Personal access tokens → Fine-grained tokens →
+Generate new token*:
+- **Repository access:** *Only select repositories* → `tsunami-bank-transactions`
+- **Permissions → Repository permissions → Actions:** *Read and write* (nič iné netreba)
+- **Expiration:** čo najdlhšia; dátum si poznačte – po vypršaní treba token v cron-job.org vymeniť
+
+### Úloha v cron-job.org
+*Cronjobs → Create cronjob*:
+
+| Pole | Hodnota |
+|---|---|
+| URL | `https://api.github.com/repos/M99-claude/tsunami-bank-transactions/actions/workflows/daily-sync.yml/dispatches` |
+| Execution schedule | každý deň o **06:00**, časové pásmo **Europe/Bratislava** |
+| Advanced → Request method | `POST` |
+| Advanced → Headers | `Authorization: Bearer <GitHub token>`<br>`Accept: application/vnd.github+json`<br>`X-GitHub-Api-Version: 2022-11-28` |
+| Advanced → Request body | `{"ref": "claude/sleepy-babbage-1ex9dt"}` |
+
+`ref` je vetva s kódom (predvolená vetva repozitára). Voliteľne sa dá poslať aj počet dní:
+`{"ref": "claude/sleepy-babbage-1ex9dt", "inputs": {"days": "3"}}`.
+
+Úspešné spustenie vráti **HTTP 204** (prázdna odpoveď). Tlačidlom *Test run* v cron-job.org si
+to overíte – v GitHube sa hneď objaví nový beh v záložke Actions.
+
+### Secrets
 V repozitári nastavte *Settings → Secrets and variables → Actions*:
 
 | Secret                        | Obsah                                              |
@@ -94,6 +121,8 @@ V repozitári nastavte *Settings → Secrets and variables → Actions*:
 
 Pri pridaní ďalšieho Fio účtu doplňte jeho premennú aj do sekcie `env` vo workflow.
 GitHub pri zlyhaní behu pošle e-mail – tak sa dozviete napr. o vypršanom súhlase banky.
+Ak by zlyhalo samotné spustenie (napr. vypršaný GitHub token), upozorní vás cron-job.org
+(v nastaveniach úlohy zapnite notifikácie pri zlyhaní).
 
 Alternatívne stačí cron na vlastnom serveri:
 
